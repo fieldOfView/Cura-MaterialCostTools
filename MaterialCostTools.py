@@ -37,7 +37,7 @@ class MaterialCostTools(Extension, QObject,):
         self.setMenuName(catalog.i18nc("@item:inmenu", "Material Cost Tools"))
 
     def exportData(self):
-        file_name = QFileDialog.getOpenFileName(
+        file_name = QFileDialog.getSaveFileName(
             parent = None,
             caption = catalog.i18nc("@title:window", "Save as"),
             directory = self._preferences.getValue("material_cost_tools/dialog_path"),
@@ -63,7 +63,10 @@ class MaterialCostTools(Extension, QObject,):
                 csv_writer.writerow(["guid", "weight (g)", "cost (%s)" % self._preferences.getValue("cura/currency")])
 
                 for (guid, data) in material_settings.items():
-                    csv_writer.writerow([guid, data["spool_weight"], data["spool_cost"]])
+                    try:
+                        csv_writer.writerow([guid, data["spool_weight"], data["spool_cost"]])
+                    except:
+                        continue
         except:
             Logger.logException("e", "Could not export settings to the selected file")
             return
