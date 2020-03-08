@@ -8,6 +8,7 @@ import os.path
 import sys
 import csv
 import json
+import re
 from uuid import UUID
 
 from UM.Extension import Extension
@@ -59,7 +60,6 @@ class MaterialCostTools(Extension, QObject,):
             Logger.logException("e", "Could not load material settings from preferences")
             return
 
-        container_registry = ContainerRegistry.getInstance()
         materials = [
             {
                 "guid": m["GUID"],
@@ -69,14 +69,20 @@ class MaterialCostTools(Extension, QObject,):
                 "spool_weight": material_settings.get(m["GUID"], {}).get("spool_weight", ""),
                 "spool_cost": material_settings.get(m["GUID"], {}).get("spool_cost", "")
             }
-            for m in container_registry.findInstanceContainersMetadata(type = "material")
+            for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
             if m["id"] == m["base_file"] and "brand" in m
-        ].sort(key = lambda k: (k["brand"], k["material"], k["name"]))
+        ]
+        materials.sort(key = lambda k: (k["brand"], k["material"], k["name"]))
 
         try:
             with open(file_name, 'w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                csv_writer.writerow(["guid", "weight (g)", "cost (%s), name" % self._preferences.getValue("cura/currency")])
+                csv_writer.writerow([
+                    "guid",
+                    "weight (g)",
+                    "cost (%s)" % self._preferences.getValue("cura/currency"),
+                    "name"
+                ])
 
                 for material in materials:
                     try:
@@ -121,7 +127,28 @@ class MaterialCostTools(Extension, QObject,):
                 for row in csv_reader:
                     line_number += 1
                     if line_number == 0:
-                        header = row
+                        if len(row) < 3:
+                            continue
+                        match = re.search("cost\s\((.*)\)", row[2])
+                        if not match:
+                            continue
+
+                        currency = match.group(1)
+
+                        if currency != self._preferences.getValue("cura/currency"):
+
+                            result = QMessageBox.question(
+                                None,
+                                catalog.i18nc("@title:window", "Import weights and prices"),
+                                catalog.i18nc("@label",
+                                    "The file contains prices specified in %s, but your Cura is configured to use %s.\nAre you sure you want to import these prices as is?" % (
+                                        currency, self._preferences.getValue("cura/currency")
+                                    )
+                                )
+                            )
+
+                            if result == QMessageBox.No:
+                                return
                     else:
                         try:
                             (guid, weight, cost) = row[0:3]
@@ -135,14 +162,17 @@ class MaterialCostTools(Extension, QObject,):
                             Logger.log("e", "UUID is malformed: %s" % row)
                             continue
 
+                        data = {}
                         try:
-                            material_settings[guid] = {
-                                "spool_cost": float(cost),
-                                "spool_weight": int(weight)
-                            }
+                             data["spool_cost"] = float(cost)
                         except:
-                            Logger.log("e", "Weight or cost is malformed: %s" % row)
-                            continue
+                            pass
+                        try:
+                            data["spool_weight"] = int(weight)
+                        except:
+                            pass
+                        if data:
+                            material_settings[guid] = data
         except:
             Logger.logException("e", "Could not import settings from the selected file")
             return
