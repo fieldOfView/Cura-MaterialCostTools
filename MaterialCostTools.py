@@ -2,7 +2,7 @@
 # MaterialCostTools is released under the terms of the AGPLv3 or higher.
 
 from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 import os.path
 import sys
@@ -19,7 +19,7 @@ from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
 
 class MaterialCostTools(Extension, QObject,):
-    def __init__(self, parent = None):
+    def __init__(self, parent = None) -> None:
         QObject.__init__(self, parent)
         Extension.__init__(self)
 
@@ -35,9 +35,10 @@ class MaterialCostTools(Extension, QObject,):
 
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Import weights && prices..."), self.importData)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Export weights && prices..."), self.exportData)
+        self.addMenuItem(catalog.i18nc("@item:inmenu", "Clear all weights && prices"), self.clearData)
 
 
-    def exportData(self):
+    def exportData(self) -> None:
         file_name = QFileDialog.getSaveFileName(
             parent = None,
             caption = catalog.i18nc("@title:window", "Save as"),
@@ -92,7 +93,7 @@ class MaterialCostTools(Extension, QObject,):
             return
 
 
-    def importData(self):
+    def importData(self) -> None:
         file_name = QFileDialog.getOpenFileName(
             parent = None,
             caption = catalog.i18nc("@title:window", "Open File"),
@@ -147,3 +148,13 @@ class MaterialCostTools(Extension, QObject,):
             return
 
         self._preferences.setValue("cura/material_settings", json.dumps(material_settings))
+
+    def clearData(self) -> None:
+        result = QMessageBox.question(
+            None,
+            catalog.i18nc("@title:window", "Clear weights and prices"),
+            catalog.i18nc("@label", "Are you sure you want to remove the spool-weights and -prices for all materials?")
+        )
+
+        if result == QMessageBox.Yes:
+            self._preferences.resetPreference("cura/material_settings")
