@@ -15,9 +15,12 @@ from UM.Extension import Extension
 from UM.Application import Application
 from UM.Logger import Logger
 from UM.Settings.ContainerRegistry import ContainerRegistry
+from cura.Machines.ContainerTree import ContainerTree
 
 from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
+
+from typing import List, Dict, Any
 
 class MaterialCostTools(Extension, QObject,):
     def __init__(self, parent = None) -> None:
@@ -35,11 +38,75 @@ class MaterialCostTools(Extension, QObject,):
         self.setMenuName(catalog.i18nc("@item:inmenu", "Material Cost Tools"))
 
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Import weights && prices..."), self.importData)
-        self.addMenuItem(catalog.i18nc("@item:inmenu", "Export weights && prices..."), self.exportData)
+        self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for all materials..."), self.exportAllMaterialData)
+        self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for favorite materials..."), self.exportFavoriteMaterialData)
+        self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for materials for current printer..."), self.exportPrinterMaterialData)
+        self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for materials with weights && prices..."), self.exportConfiguredData)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Clear all weights && prices"), self.clearData)
 
+    def exportAllMaterialData(self):
+        materials_metadata = [
+            m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
+            if m["id"] == m["base_file"]
+        ]
 
-    def exportData(self) -> None:
+        self._exportData(materials_metadata)
+
+    def exportFavoriteMaterialData(self):
+        favorite_ids = set(self._preferences.getValue("cura/favorite_materials").split(";"))
+        materials_metadata = [
+            m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
+            if m["base_file"] in favorite_ids and m["id"] == m["base_file"]
+        ]
+
+        self._exportData(materials_metadata)
+
+    def exportPrinterMaterialData(self):
+        global_stack = self._application.getGlobalContainerStack()
+        if not global_stack or not global_stack.getMetaDataEntry("has_materials", False):
+            return
+        extruder_stack = global_stack.extruders.get("0")
+        if not extruder_stack:
+            return
+
+        approximate_material_diameter = extruder_stack.getApproximateMaterialDiameter()
+
+        nozzle_name = extruder_stack.variant.getName()
+        machine_node = ContainerTree.getInstance().machines[global_stack.definition.getId()]
+        if nozzle_name not in machine_node.variants:
+            Logger.log("w", "Unable to find variant %s in container tree", nozzle_name)
+            return
+
+        material_nodes = machine_node.variants[nozzle_name].materials
+        materials_metadata = [
+            m.getMetadata() for m in material_nodes.values()
+            if float(m.getMetaDataEntry("approximate_diameter", -1)) == approximate_material_diameter
+        ]
+
+        self._exportData(materials_metadata)
+
+    def exportConfiguredData(self):
+        try:
+            material_settings = json.loads(self._preferences.getValue("cura/material_settings"))
+        except:
+            Logger.logException("e", "Could not load material settings from preferences")
+            return
+
+        materials_metadata = [
+            m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
+            if m["GUID"] in material_settings.keys() and m["id"] == m["base_file"]
+        ]
+
+        self._exportData(materials_metadata)
+
+
+    def _exportData(self, materials_metadata: List[Dict[str, Any]]) -> None:
+        try:
+            material_settings = json.loads(self._preferences.getValue("cura/material_settings"))
+        except:
+            Logger.logException("e", "Could not load material settings from preferences")
+            return
+
         file_name = QFileDialog.getSaveFileName(
             parent = None,
             caption = catalog.i18nc("@title:window", "Save as"),
@@ -54,13 +121,7 @@ class MaterialCostTools(Extension, QObject,):
 
         self._preferences.setValue("material_cost_tools/dialog_path", os.path.dirname(file_name))
 
-        try:
-            material_settings = json.loads(self._preferences.getValue("cura/material_settings"))
-        except:
-            Logger.logException("e", "Could not load material settings from preferences")
-            return
-
-        materials = [
+        materials_metadata = [
             {
                 "guid": m["GUID"],
                 "material": m["material"],
@@ -69,10 +130,11 @@ class MaterialCostTools(Extension, QObject,):
                 "spool_weight": material_settings.get(m["GUID"], {}).get("spool_weight", ""),
                 "spool_cost": material_settings.get(m["GUID"], {}).get("spool_cost", "")
             }
-            for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
-            if m["id"] == m["base_file"] and "brand" in m
+            for m in materials_metadata
+            if "brand" in m
         ]
-        materials.sort(key = lambda k: (k["brand"], k["material"], k["name"]))
+        materials_metadata.sort(key = lambda k: (k["brand"], k["material"], k["name"]))
+
 
         try:
             with open(file_name, 'w', newline='') as csv_file:
@@ -84,7 +146,7 @@ class MaterialCostTools(Extension, QObject,):
                     "name"
                 ])
 
-                for material in materials:
+                for material in materials_metadata:
                     try:
                         csv_writer.writerow([
                             material["guid"],
