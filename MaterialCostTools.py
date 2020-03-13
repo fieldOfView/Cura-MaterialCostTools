@@ -14,6 +14,7 @@ from uuid import UUID
 from UM.Extension import Extension
 from UM.Application import Application
 from UM.Logger import Logger
+from UM.Message import Message
 from UM.Settings.ContainerRegistry import ContainerRegistry
 
 use_container_tree = True
@@ -35,6 +36,8 @@ class MaterialCostTools(Extension, QObject,):
         self._application = Application.getInstance()
         self._preferences = self._application.getPreferences()
         self._preferences.addPreference("material_cost_tools/dialog_path", "")
+
+        self._message = Message()
 
         self._dialog_options = QFileDialog.Options()
         if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
@@ -146,7 +149,7 @@ class MaterialCostTools(Extension, QObject,):
         ]
         materials_metadata.sort(key = lambda k: (k["brand"], k["material"], k["name"]))
 
-
+        exported_count = 0
         try:
             with open(file_name, 'w', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -165,11 +168,21 @@ class MaterialCostTools(Extension, QObject,):
                             material["spool_weight"],
                             material["spool_cost"]
                         ])
+                        exported_count += 1
                     except:
                         continue
         except:
             Logger.logException("e", "Could not export settings to the selected file")
             return
+
+        self._message.hide()
+        self._message = Message(
+            catalog.i18ncp(
+                "@info:status {0} is count", "Exported data for {0} material.", "Exported data for {0} materials.", exported_count
+            ).format(exported_count),
+            title=catalog.i18nc("@info:title", "Material Cost Tools")
+        )
+        self._message.show()
 
 
     def importData(self) -> None:
@@ -193,6 +206,7 @@ class MaterialCostTools(Extension, QObject,):
             Logger.logException("e", "Could not load material settings from preferences")
             return
 
+        imported_count = 0
         try:
             with open(file_name, 'r', newline='') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -246,11 +260,22 @@ class MaterialCostTools(Extension, QObject,):
                             pass
                         if data:
                             material_settings[guid] = data
+                            imported_count += 1
         except:
             Logger.logException("e", "Could not import settings from the selected file")
             return
 
         self._preferences.setValue("cura/material_settings", json.dumps(material_settings))
+
+        self._message.hide()
+        self._message = Message(
+            catalog.i18ncp(
+                "@info:status {0} is count", "Imported weight & price for {0} material.", "Imported weights & prices for {0} materials.", imported_count
+            ).format(imported_count),
+            title=catalog.i18nc("@info:title", "Material Cost Tools")
+        )
+        self._message.show()
+
 
     def clearData(self) -> None:
         result = QMessageBox.question(
