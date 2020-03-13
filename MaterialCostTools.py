@@ -152,18 +152,18 @@ class MaterialCostTools(Extension, QObject,):
                 csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 csv_writer.writerow([
                     "guid",
+                    "name",
                     "weight (g)",
-                    "cost (%s)" % self._preferences.getValue("cura/currency"),
-                    "name"
+                    "cost (%s)" % self._preferences.getValue("cura/currency")
                 ])
 
                 for material in materials_metadata:
                     try:
                         csv_writer.writerow([
                             material["guid"],
+                            "%s %s" % (material["brand"], material["name"]),
                             material["spool_weight"],
-                            material["spool_cost"],
-                            "%s %s" % (material["brand"], material["name"])
+                            material["spool_cost"]
                         ])
                     except:
                         continue
@@ -200,9 +200,9 @@ class MaterialCostTools(Extension, QObject,):
                 for row in csv_reader:
                     line_number += 1
                     if line_number == 0:
-                        if len(row) < 3:
+                        if len(row) < 4:
                             continue
-                        match = re.search("cost\s\((.*)\)", row[2])
+                        match = re.search("cost\s\((.*)\)", row[3])
                         if not match:
                             continue
 
@@ -224,7 +224,7 @@ class MaterialCostTools(Extension, QObject,):
                                 return
                     else:
                         try:
-                            (guid, weight, cost) = row[0:3]
+                            (guid, name, weight, cost) = row[0:4]
                         except:
                             Logger.log("e", "Row does not have enough data: %s" % row)
                             continue
