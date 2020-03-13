@@ -15,7 +15,12 @@ from UM.Extension import Extension
 from UM.Application import Application
 from UM.Logger import Logger
 from UM.Settings.ContainerRegistry import ContainerRegistry
-from cura.Machines.ContainerTree import ContainerTree
+
+use_container_tree = True
+try:
+    from cura.Machines.ContainerTree import ContainerTree
+except ImportError:
+    use_container_tree = False
 
 from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
@@ -71,17 +76,23 @@ class MaterialCostTools(Extension, QObject,):
 
         approximate_material_diameter = extruder_stack.getApproximateMaterialDiameter()
 
-        nozzle_name = extruder_stack.variant.getName()
-        machine_node = ContainerTree.getInstance().machines[global_stack.definition.getId()]
-        if nozzle_name not in machine_node.variants:
-            Logger.log("w", "Unable to find variant %s in container tree", nozzle_name)
-            return
+        if use_container_tree:
+            nozzle_name = extruder_stack.variant.getName()
+            machine_node = ContainerTree.getInstance().machines[global_stack.definition.getId()]
+            if nozzle_name not in machine_node.variants:
+                Logger.log("w", "Unable to find variant %s in container tree", nozzle_name)
+                return
 
-        material_nodes = machine_node.variants[nozzle_name].materials
-        materials_metadata = [
-            m.getMetadata() for m in material_nodes.values()
-            if float(m.getMetaDataEntry("approximate_diameter", -1)) == approximate_material_diameter
-        ]
+            material_nodes = machine_node.variants[nozzle_name].materials
+            materials_metadata = [
+                m.getMetadata() for m in material_nodes.values()
+                if float(m.getMetaDataEntry("approximate_diameter", -1)) == approximate_material_diameter
+            ]
+        else:
+            materials_metadata = [
+                m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
+                if m.get("approximate_diameter", -1) == approximate_material_diameter and m["id"] == m["base_file"]
+            ]
 
         self._exportData(materials_metadata)
 
