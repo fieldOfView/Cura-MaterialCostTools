@@ -51,10 +51,12 @@ class MaterialCostTools(Extension, QObject,):
         self.setMenuName(catalog.i18nc("@item:inmenu", "Material Cost Tools"))
 
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Import weights && prices..."), self.importData)
+        self.addMenuItem("", lambda: None)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for all materials..."), self.exportAllMaterialData)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for favorite materials..."), self.exportFavoriteMaterialData)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for materials for current printer..."), self.exportPrinterMaterialData)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Export data for materials with weights && prices..."), self.exportConfiguredData)
+        self.addMenuItem(" ", lambda: None)
         self.addMenuItem(catalog.i18nc("@item:inmenu", "Clear all weights && prices"), self.clearData)
 
     def exportAllMaterialData(self):
