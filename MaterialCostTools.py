@@ -60,7 +60,7 @@ class MaterialCostTools(Extension, QObject,):
     def exportAllMaterialData(self):
         materials_metadata = [
             m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
-            if m["id"] == m["base_file"]
+            if "base_file" in m and m["id"] == m["base_file"]
         ]
 
         self._exportData(materials_metadata)
@@ -69,7 +69,7 @@ class MaterialCostTools(Extension, QObject,):
         favorite_ids = set(self._preferences.getValue("cura/favorite_materials").split(";"))
         materials_metadata = [
             m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
-            if m["base_file"] in favorite_ids and m["id"] == m["base_file"]
+            if "base_file" in m and m["base_file"] in favorite_ids and m["id"] == m["base_file"]
         ]
 
         self._exportData(materials_metadata)
@@ -99,7 +99,7 @@ class MaterialCostTools(Extension, QObject,):
         else:
             materials_metadata = [
                 m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
-                if m.get("approximate_diameter", -1) == approximate_material_diameter and m["id"] == m["base_file"]
+                if "base_file" in m and m.get("approximate_diameter", -1) == approximate_material_diameter and m["id"] == m["base_file"]
             ]
 
         self._exportData(materials_metadata)
@@ -113,7 +113,7 @@ class MaterialCostTools(Extension, QObject,):
 
         materials_metadata = [
             m for m in ContainerRegistry.getInstance().findInstanceContainersMetadata(type = "material")
-            if m["GUID"] in material_settings.keys() and m["id"] == m["base_file"]
+            if "base_file" in m and m["GUID"] in material_settings.keys() and m["id"] == m["base_file"]
         ]
 
         self._exportData(materials_metadata)
