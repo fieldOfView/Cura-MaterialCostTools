@@ -6,10 +6,15 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 import os.path
 import sys
-import csv
 import json
 import re
 from uuid import UUID
+try:
+    import csv
+except ImportError:
+    # older versions of Cura somehow ship with a python version that does not include
+    # this file, so a local copy is supplied as a fallback
+    from . import csv
 
 from UM.Extension import Extension
 from UM.Application import Application
