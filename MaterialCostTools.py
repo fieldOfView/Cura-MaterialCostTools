@@ -1,4 +1,4 @@
-# Copyright (c) 2020 fieldOfView
+# Copyright (c) 2020 Aldo Hoeben / fieldOfView
 # MaterialCostTools is released under the terms of the AGPLv3 or higher.
 
 from PyQt5.QtCore import QObject
@@ -14,7 +14,7 @@ try:
 except ImportError:
     # older versions of Cura somehow ship with a python version that does not include
     # this file, so a local copy is supplied as a fallback
-    from . import csv
+    from . import csv  # type: ignore
 
 from UM.Extension import Extension
 from UM.Application import Application
