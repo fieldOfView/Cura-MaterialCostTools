@@ -1,8 +1,12 @@
-# Copyright (c) 2021 Aldo Hoeben / fieldOfView
+# Copyright (c) 2022 Aldo Hoeben / fieldOfView
 # MaterialCostTools is released under the terms of the AGPLv3 or higher.
 
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+try:
+    from PyQt6.QtCore import QObject
+    from PyQt6.QtWidgets import QFileDialog, QMessageBox
+except ImportError:
+    from PyQt5.QtCore import QObject
+    from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 import os.path
 import sys
