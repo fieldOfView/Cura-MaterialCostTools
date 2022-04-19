@@ -1,12 +1,14 @@
 # Copyright (c) 2022 Aldo Hoeben / fieldOfView
 # MaterialCostTools is released under the terms of the AGPLv3 or higher.
 
+USE_QT5 = False
 try:
     from PyQt6.QtCore import QObject
     from PyQt6.QtWidgets import QFileDialog, QMessageBox
 except ImportError:
     from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QFileDialog, QMessageBox
+    USE_QT5 = True
 
 import os.path
 import sys
@@ -26,11 +28,11 @@ from UM.Logger import Logger
 from UM.Message import Message
 from UM.Settings.ContainerRegistry import ContainerRegistry
 
-use_container_tree = True
+USE_CONTAINER_TREE = True
 try:
     from cura.Machines.ContainerTree import ContainerTree
 except ImportError:
-    use_container_tree = False
+    USE_CONTAINER_TREE = False
 
 from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
@@ -48,9 +50,12 @@ class MaterialCostTools(Extension, QObject,):
 
         self._message = Message()
 
-        self._dialog_options = QFileDialog.Options()
-        if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
-            self._dialog_options |= QFileDialog.DontUseNativeDialog
+        if USE_QT5:
+            self._dialog_options = QFileDialog.Options()
+            if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
+                self._dialog_options |= QFileDialog.DontUseNativeDialog
+        else:
+            self._dialog_options = None
 
         self.setMenuName(catalog.i18nc("@item:inmenu", "Material Cost Tools"))
 
@@ -90,7 +95,7 @@ class MaterialCostTools(Extension, QObject,):
 
         approximate_material_diameter = extruder_stack.getApproximateMaterialDiameter()
 
-        if use_container_tree:
+        if USE_CONTAINER_TREE:
             nozzle_name = extruder_stack.variant.getName()
             machine_node = ContainerTree.getInstance().machines[global_stack.definition.getId()]
             if nozzle_name not in machine_node.variants:
@@ -132,13 +137,26 @@ class MaterialCostTools(Extension, QObject,):
             Logger.logException("e", "Could not load material settings from preferences")
             return
 
-        file_name = QFileDialog.getSaveFileName(
-            parent = None,
-            caption = catalog.i18nc("@title:window", "Save as"),
-            directory = self._preferences.getValue("material_cost_tools/dialog_path"),
-            filter = "CSV files (*.csv)",
-            options = self._dialog_options
-        )[0]
+        file_name = ""
+        if USE_QT5:
+            file_name = QFileDialog.getSaveFileName(
+                parent = None,
+                caption = catalog.i18nc("@title:window", "Save as"),
+                directory = self._preferences.getValue("material_cost_tools/dialog_path"),
+                filter = "CSV files (*.csv)",
+                options = self._dialog_options
+            )[0]
+        else:
+            dialog = QFileDialog()
+            dialog.setWindowTitle(catalog.i18nc("@title:window", "Save as"))
+            dialog.setDirectory(self._preferences.getValue("material_cost_tools/dialog_path"))
+            dialog.setNameFilters(["CSV files (*.csv)"])
+            if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
+                dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+            dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+            dialog.setFileMode(QFileDialog.FileMode.AnyFile)
+            if dialog.exec():
+                file_name = dialog.selectedFiles()[0]
 
         if not file_name:
             Logger.log("d", "No file to export to selected")
@@ -197,13 +215,26 @@ class MaterialCostTools(Extension, QObject,):
 
 
     def importData(self) -> None:
-        file_name = QFileDialog.getOpenFileName(
-            parent = None,
-            caption = catalog.i18nc("@title:window", "Open File"),
-            directory = self._preferences.getValue("material_cost_tools/dialog_path"),
-            filter = "CSV files (*.csv)",
-            options = self._dialog_options
-        )[0]
+        file_name = ""
+        if USE_QT5:
+            file_name = QFileDialog.getOpenFileName(
+                parent = None,
+                caption = catalog.i18nc("@title:window", "Open File"),
+                directory = self._preferences.getValue("material_cost_tools/dialog_path"),
+                filter = "CSV files (*.csv)",
+                options = self._dialog_options
+            )[0]
+        else:
+            dialog = QFileDialog()
+            dialog.setWindowTitle(catalog.i18nc("@title:window", "Open File"))
+            dialog.setDirectory(self._preferences.getValue("material_cost_tools/dialog_path"))
+            dialog.setNameFilters(["CSV files (*.csv)"])
+            if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
+                dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
+            dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+            if dialog.exec():
+                file_name = dialog.selectedFiles()[0]
 
         if not file_name:
             Logger.log("d", "No file to import from selected")
