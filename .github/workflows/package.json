@@ -1,0 +1,16 @@
+{
+    "author": {
+        "author_id": "fieldofview",
+        "display_name": "fieldOfView",
+        "email": "aldo@fieldofview.com",
+        "website": "http://fieldofview.com"
+    },
+    "description": "Adds tools related to weight and cost of materials, such as importing and exporting weights and costs to a file which can be easily distributed.\n\nThe development of this plugin can be sponsored via Github Sponsors (https://github.com/sponsors/fieldofview) or Paypal (https://www.paypal.me/fieldofview)",
+    "display_name": "Material Cost Tools",
+    "package_id": "MaterialCostTools",
+    "package_type": "plugin",
+    "package_version": "0.0.0",
+    "sdk_version": 0,
+    "sdk_version_semver": "0.0.0",
+    "website": "https://github.com/fieldOfView/Cura-MaterialCostTools"
+}
