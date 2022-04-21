@@ -151,8 +151,6 @@ class MaterialCostTools(Extension, QObject,):
             dialog.setWindowTitle(catalog.i18nc("@title:window", "Save as"))
             dialog.setDirectory(self._preferences.getValue("material_cost_tools/dialog_path"))
             dialog.setNameFilters(["CSV files (*.csv)"])
-            if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
-                dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
             dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
             dialog.setFileMode(QFileDialog.FileMode.AnyFile)
             if dialog.exec():
@@ -229,8 +227,6 @@ class MaterialCostTools(Extension, QObject,):
             dialog.setWindowTitle(catalog.i18nc("@title:window", "Open File"))
             dialog.setDirectory(self._preferences.getValue("material_cost_tools/dialog_path"))
             dialog.setNameFilters(["CSV files (*.csv)"])
-            if sys.platform == "linux" and "KDE_FULL_SESSION" in os.environ:
-                dialog.setOption(QFileDialog.Option.DontUseNativeDialog)
             dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
             dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
             if dialog.exec():
