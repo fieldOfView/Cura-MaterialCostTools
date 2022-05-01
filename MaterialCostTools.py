@@ -5,9 +5,11 @@ USE_QT5 = False
 try:
     from PyQt6.QtCore import QObject
     from PyQt6.QtWidgets import QFileDialog, QMessageBox
+    QMessageBoxStandardButtons = QMessageBox.StandardButton
 except ImportError:
     from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QFileDialog, QMessageBox
+    QMessageBoxStandardButtons = QMessageBox
     USE_QT5 = True
 
 import os.path
@@ -272,7 +274,7 @@ class MaterialCostTools(Extension, QObject,):
                                 )
                             )
 
-                            if result == QMessageBox.No:
+                            if result == QMessageBoxStandardButtons.No:
                                 return
                     else:
                         try:
@@ -322,5 +324,5 @@ class MaterialCostTools(Extension, QObject,):
             catalog.i18nc("@label", "Are you sure you want to remove the spool-weights and -prices for all materials?")
         )
 
-        if result == QMessageBox.Yes:
+        if result == QMessageBoxStandardButtons.Yes:
             self._preferences.resetPreference("cura/material_settings")
