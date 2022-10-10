@@ -1,12 +1,16 @@
 # Copyright (c) 2022 Aldo Hoeben / fieldOfView
 # MaterialCostTools is released under the terms of the AGPLv3 or higher.
 
-USE_QT5 = False
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+USE_QT5 = False
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import QObject
     from PyQt6.QtWidgets import QFileDialog, QMessageBox
     QMessageBoxStandardButtons = QMessageBox.StandardButton
-except ImportError:
+else:
     from PyQt5.QtCore import QObject
     from PyQt5.QtWidgets import QFileDialog, QMessageBox
     QMessageBoxStandardButtons = QMessageBox
